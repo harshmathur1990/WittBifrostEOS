@@ -18,6 +18,7 @@ inversion).
 | `src/Table.jl` | bicubic Hermite tables of a model: `build_table`, `save_table`, `load_table`, `state`, `hydrogen` |
 | `src/ExtendedEOS.jl` | a table with the model it was built from, for (T, P) outside it (`table_model`, `ExtendedEOS`, `extended_fields`) |
 | `data/pf_Kurucz.input` | Kurucz partition functions |
+| `python/witt.py`, `python/witt_bifrost.py` | Wittmann's Python EOS as distributed, and `witt_bifrost.witt()`: the same with the shim's patches (tolerances, the gasc H₂ fix), so Python and `libwitt` agree to the solver tolerance (from HSEMHS's oracle) |
 
 ## Build
 
