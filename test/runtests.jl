@@ -11,12 +11,16 @@ const W = WittBifrostEOS
         end
         @test read(joinpath(dir, "witt_shim.cpp"), String) == read(joinpath(pkgdir(W), "deps", "witt", "witt_shim.cpp"), String)
         @test isfile(libwitt_path())
+        @test use_libwitt!(libwitt_path()) == libwitt_path()
         @test witt_fix_gasc_h2()
         lib = libwitt_handle()
         for s in (:witt_create_backend, :witt_continuum_state, :witt_kurucz_populations, :witt_kurucz_populations_given_ne,
                   :witt_given_state_parallel, :witt_thermodynamics_from_pgas_parallel)           # FFNOInversion's entry points
             @test W.Libdl.dlsym(lib, s; throw_error = false) !== nothing
         end
+        other = joinpath(mktempdir(), "libwitt.so"); cp(libwitt_path(), other)
+        @test_throws InvalidInput use_libwitt!(other)                                       # one library per process
+        @test use_libwitt!(other; strict = false) == libwitt_path() != other
     end
 
     m = EOSModel(default_pf_file(); prec = 1e-10, maxit = 5000)

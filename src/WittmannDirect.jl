@@ -25,13 +25,18 @@ const WITT_FN = Dict{Symbol,Ptr{Cvoid}}()
 const WITT_LOCK = ReentrantLock()
 const WITT_READY = Threads.Atomic{Bool}(false)
 
-"""The libwitt every user of this package loads: `WITTBIFROSTEOS_LIBWITT`, else deps/witt in the package."""
-function libwitt_path()
+const WITT_PATH = Ref{String}("")
+
+"""The libwitt this package builds and loads by default: `WITTBIFROSTEOS_LIBWITT`, else deps/witt in the package."""
+function default_libwitt_path()
     p = get(ENV, "WITTBIFROSTEOS_LIBWITT", "")
     isempty(p) || return p
     ext = Sys.isapple() ? "dylib" : "so"
     return joinpath(pkgdir(@__MODULE__), "deps", "witt", "libwitt.$ext")
 end
+
+"""The libwitt every user of this package in this process loads: the one given to `use_libwitt!`, else `default_libwitt_path()`."""
+libwitt_path() = isempty(WITT_PATH[]) ? default_libwitt_path() : WITT_PATH[]
 
 """Open libwitt and resolve the shim's symbols, once."""
 function libwitt_handle()
@@ -48,6 +53,26 @@ function libwitt_handle()
         end
     end
     return WITT_LIB[]
+end
+
+"""
+    use_libwitt!(path; strict = true) -> the library this package uses
+
+Use the libwitt at `path` (built by `build_libwitt`, e.g. on the node type that runs the job) for this process. Before the library is
+first used; afterwards `strict` accepts only the same file, and `strict = false` keeps the loaded one (another build of the same source).
+"""
+function use_libwitt!(path::AbstractString; strict::Bool = true)
+    isfile(path) || invalid("Wittmann library not found at $path")
+    lock(WITT_LOCK) do
+        if WITT_READY[]
+            strict && realpath(path) != realpath(libwitt_path()) &&
+                invalid("libwitt is already loaded from $(libwitt_path()); one process uses one library (asked for $path)")
+        else
+            WITT_PATH[] = abspath(path)
+            libwitt_handle()                     # opened now: the file may be a temporary build
+        end
+    end
+    return libwitt_path()
 end
 
 """A shim function pointer; lock-free once the library is open (the table is not written after that)."""
