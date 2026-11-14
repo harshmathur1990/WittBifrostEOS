@@ -15,6 +15,7 @@ using Libdl
 using Printf
 using Random
 using Statistics
+import Scratch
 
 include("Status.jl")
 include("WittmannDirect.jl")
@@ -33,7 +34,7 @@ default_nlte_correction() = joinpath(pkgdir(@__MODULE__), "data", "nlte", "nlte_
 export EOS_OK, EOS_HOT_BRANCH, EOS_BLEND, EOS_OUT_OF_ENVELOPE, OPACITY_INCOMPLETE, EOS_DIRECT_FAILED, EOS_ROBUST_FALLBACK, EOS_NLTE
 export InvalidInput, K_B_WITT, M_U_WITT, meta_value
 export WittCtx, WittState, witt_state, witt_partials!, witt_mass_per_H, witt_abundances, witt_pf, witt_fix_gasc_h2, file_sha256
-export libwitt_path, default_libwitt_path, libwitt_handle, use_libwitt!, build_libwitt, default_pf_file, default_nlte_correction
+export libwitt_path, default_libwitt_path, libwitt_build_dir, libwitt_handle, use_libwitt!, build_libwitt, default_pf_file, default_nlte_correction
 export HotEOS, NLTECorrection, load_nlte_correction, EOSModel, model_fields, model_eval, Envelope, coverage_scan, select_T_sw
 export AbstractEOS, EOSTable, build_table, save_table, load_table, validate_table, derivative_check, table_sha256
 export lnrho, lnrho_dY, state, hydrogen, fields_at, in_table, eos_model, mass_per_H

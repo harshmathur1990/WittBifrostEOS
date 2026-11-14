@@ -21,9 +21,11 @@ inversion).
 
 ## Build
 
-`Pkg.build("WittBifrostEOS")` (or `WittBifrostEOS.build_libwitt()`) compiles `deps/witt/libwitt.so` with `CXX` (default `g++`,
-`clang++` on macOS). Where the package directory is read-only, build elsewhere with `build_libwitt(dir)` and set
-`WITTBIFROSTEOS_LIBWITT` to the library. Every user in a process loads the same library (`libwitt_path`, `libwitt_handle`).
+`Pkg.build("WittBifrostEOS")` (or `WittBifrostEOS.build_libwitt()`) generates the shim and compiles `libwitt` with `CXX` (default
+`g++`, `clang++` on macOS) into a scratch space keyed by the shim's checksum (`libwitt_build_dir()`), never into the package
+directory, which Pkg installs read-only. Build on the node type that loads it. `build_libwitt(dir)` builds elsewhere; point
+`WITTBIFROSTEOS_LIBWITT` or `use_libwitt!(path)` at the result. Every user in a process loads one library (`libwitt_path`,
+`libwitt_handle`).
 
 ## Origin
 

@@ -27,12 +27,20 @@ const WITT_READY = Threads.Atomic{Bool}(false)
 
 const WITT_PATH = Ref{String}("")
 
-"""The libwitt this package builds and loads by default: `WITTBIFROSTEOS_LIBWITT`, else deps/witt in the package."""
+"""
+The directory `Pkg.build` compiles libwitt into: a scratch space keyed by the shim's SHA-256, so that every revision of the
+package has its own library and nothing is written into the (read-only) package directory.
+"""
+function libwitt_build_dir()
+    shim = joinpath(pkgdir(@__MODULE__), "deps", "witt", "witt_shim.cpp")
+    return Scratch.get_scratch!(Base.PkgId(@__MODULE__).uuid, "libwitt-" * bytes2hex(open(sha256, shim))[1:16])
+end
+
+"""The libwitt this package builds and loads by default: `WITTBIFROSTEOS_LIBWITT`, else the one in `libwitt_build_dir()`."""
 function default_libwitt_path()
     p = get(ENV, "WITTBIFROSTEOS_LIBWITT", "")
     isempty(p) || return p
-    ext = Sys.isapple() ? "dylib" : "so"
-    return joinpath(pkgdir(@__MODULE__), "deps", "witt", "libwitt.$ext")
+    return joinpath(libwitt_build_dir(), "libwitt.$(Sys.isapple() ? "dylib" : "so")")
 end
 
 """The libwitt every user of this package in this process loads: the one given to `use_libwitt!`, else `default_libwitt_path()`."""
@@ -44,7 +52,7 @@ function libwitt_handle()
     lock(WITT_LOCK) do
         if !WITT_READY[]
             p = libwitt_path()
-            isfile(p) || invalid("Wittmann library not found at $p; build it with WittBifrostEOS.build_libwitt() (Pkg.build(\"WittBifrostEOS\")) or set WITTBIFROSTEOS_LIBWITT")
+            isfile(p) || invalid("Wittmann library not found at $p; build it with Pkg.build(\"WittBifrostEOS\") (WittBifrostEOS.build_libwitt()) or set WITTBIFROSTEOS_LIBWITT")
             WITT_LIB[] = Libdl.dlopen(p)
             for n in WITT_SYMS
                 WITT_FN[n] = Libdl.dlsym(WITT_LIB[], n)
@@ -82,12 +90,12 @@ end
 end
 
 """
-    build_libwitt(dir = deps/witt in the package) -> path
+    build_libwitt(dir = libwitt_build_dir()) -> path
 
-Generate the shim and compile libwitt into `dir` (`CXX`, default g++; clang++ on macOS). Use another directory where the package
-directory is read-only, and point `WITTBIFROSTEOS_LIBWITT` at the result.
+Generate the shim and compile libwitt into `dir` (`CXX`, default g++; clang++ on macOS). `Pkg.build("WittBifrostEOS")` does this for
+the default directory; elsewhere, point `WITTBIFROSTEOS_LIBWITT` or `use_libwitt!` at the result.
 """
-function build_libwitt(dir::AbstractString = joinpath(pkgdir(@__MODULE__), "deps", "witt"))
+function build_libwitt(dir::AbstractString = libwitt_build_dir())
     script = joinpath(pkgdir(@__MODULE__), "deps", "witt", "build.jl")
     withenv("WITTBIFROSTEOS_BUILD_DIR" => abspath(dir)) do
         run(`$(Base.julia_cmd()) --startup-file=no $script`)

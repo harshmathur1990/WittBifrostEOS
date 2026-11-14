@@ -1,3 +1,4 @@
-# Pkg.build hook: generate the shim and compile libwitt into deps/witt (deps/witt/build.jl).
-include(joinpath(@__DIR__, "witt", "build.jl"))
-build()
+# Pkg.build hook: generate the shim and compile libwitt into the package's scratch space (WittBifrostEOS.libwitt_build_dir),
+# never into the package directory, which Pkg installs read-only.
+import WittBifrostEOS
+WittBifrostEOS.build_libwitt()
