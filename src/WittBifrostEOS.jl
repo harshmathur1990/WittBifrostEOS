@@ -37,7 +37,7 @@ export WittCtx, WittState, witt_state, witt_partials!, witt_mass_per_H, witt_abu
 export libwitt_path, default_libwitt_path, libwitt_build_dir, libwitt_handle, use_libwitt!, build_libwitt, default_pf_file, default_nlte_correction
 export HotEOS, NLTECorrection, load_nlte_correction, EOSModel, model_fields, model_eval, Envelope, coverage_scan, select_T_sw
 export AbstractEOS, EOSTable, build_table, save_table, load_table, validate_table, derivative_check, table_sha256
-export lnrho, lnrho_dY, state, hydrogen, fields_at, in_table, eos_model, mass_per_H
+export lnrho, lnrho_dY, state, state_d, hydrogen, fields_at, in_table, eos_model, mass_per_H
 export read_log_abund, table_model, ExtendedEOS, extended_model, extended_fields
 
 end

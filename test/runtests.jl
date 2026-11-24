@@ -59,5 +59,22 @@ const W = WittBifrostEOS
         X2 = log(1.0e6)
         @test !in_table(t, X2, Y)
         @test collect(extended_fields(e, X2, Y)) == collect(model_fields(nlte, X2, Y)[1])
+
+        # state_d: the values of state and the X, Y derivatives of the same interpolant (cell interiors and edges)
+        worst = 0.0
+        for X in range(log(4200.0), log(1.9e4); length = 23), Y in range(-0.9, 3.9; length = 17)
+            d = state_d(t, X, Y)
+            @test collect(d[1:3]) == collect(state(t, X, Y)[1:3]) && d[10] == state(t, X, Y)[4]
+            h = 1e-6
+            for f in 1:3
+                fdX = (state(t, X + h, Y)[f] - state(t, X - h, Y)[f]) / 2h
+                fdY = (state(t, X, Y + h)[f] - state(t, X, Y - h)[f]) / 2h
+                worst = max(worst, abs(fdX - d[2+2f]) / max(abs(fdX), 1e-2), abs(fdY - d[3+2f]) / max(abs(fdY), 1e-2))
+            end
+        end
+        @test worst < 1e-6
+        @test all(isnan, state_d(t, X2, Y)[1:9]) && state_d(t, X2, Y)[10] == EOS_OUT_OF_ENVELOPE
+        X3, Y3 = tab.X[7], tab.Y[5]                          # on a node: one-sided derivative of the cell found
+        @test all(isfinite, state_d(t, X3, Y3)[1:9])
     end
 end
