@@ -141,6 +141,37 @@ end
     return r, n, c, xflags(tab, X, p, q)
 end
 
+"""Value, ∂/∂X and ∂/∂Y of field `k` in cell (p, q) at local coordinates (t, s): the derivatives of the interpolant."""
+@inline function hermite_d(tab::EOSTable, k::Int, p::Int, q::Int, t, s, hX, hY)
+    Ht = hbasis(t); Hs = hbasis(s); dHt = hderiv(t); dHs = hderiv(s)
+    V = tab.V
+    val = 0.0; dX = 0.0; dY = 0.0
+    @inbounds for a in 0:1, b in 0:1
+        i = p + a; j = q + b
+        f = V[1, k, i, j]; fX = hX * V[2, k, i, j]; fY = hY * V[3, k, i, j]; fXY = hX * hY * V[4, k, i, j]
+        Ha = Ht[1+a]; Ka = Ht[3+a]; Hb = Hs[1+b]; Kb = Hs[3+b]
+        dHa = dHt[1+a]; dKa = dHt[3+a]; dHb = dHs[1+b]; dKb = dHs[3+b]
+        val += f * Ha * Hb + fX * Ka * Hb + fY * Ha * Kb + fXY * Ka * Kb
+        dX += f * dHa * Hb + fX * dKa * Hb + fY * dHa * Kb + fXY * dKa * Kb
+        dY += f * Ha * dHb + fX * Ka * dHb + fY * Ha * dKb + fXY * Ka * dKb
+    end
+    return val, dX / hX, dY / hY
+end
+
+"""
+(ln ρ, ln nₑ, ln χ₅₀₀, ∂ln ρ/∂X, ∂ln ρ/∂Y, ∂ln nₑ/∂X, ∂ln nₑ/∂Y, ∂ln χ/∂X, ∂ln χ/∂Y, status) at (X = ln T, Y = ln P): the
+values of `state` and the derivatives of the same bicubic Hermite interpolant (continuous across cells; on a node, those
+of the cell `locate` finds). NaN outside the table.
+"""
+@inline function state_d(tab::EOSTable, X::Float64, Y::Float64)
+    in_table(tab, X, Y) || return NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, EOS_OUT_OF_ENVELOPE
+    p, q, t, s, hX, hY = locate(tab, X, Y)
+    r, rX, rY = hermite_d(tab, 1, p, q, t, s, hX, hY)
+    n, nX, nY = hermite_d(tab, 2, p, q, t, s, hX, hY)
+    c, cX, cY = hermite_d(tab, 3, p, q, t, s, hX, hY)
+    return r, n, c, rX, rY, nX, nY, cX, cY, xflags(tab, X, p, q)
+end
+
 nfields(tab::EOSTable) = size(tab.V, 2)
 field_names(nf::Int) = nf == 5 ? LN_FIELDS_H : LN_FIELDS
 field_names(tab::EOSTable) = field_names(nfields(tab))
